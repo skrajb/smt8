@@ -187,7 +187,7 @@
         return false;
       }
       if (r.reason === "BLOCKED" || r.reason === "EXPIRED" || r.reason === "INVALID" || r.reason === "NOACCESS") {
-        global.clearActivation(t.code, r.reason === "NOACCESS");
+        global.clearActivation(t.code, r.reason === "NOACCESS" || r.reason === "EXPIRED");   // only THIS exam type: the key's other types may have days left
         return true;
       }
       return false;

@@ -24,6 +24,7 @@ th,td{text-align:left;padding:8px;border-bottom:1px solid var(--bd);vertical-ali
 code{background:#eef1f8;padding:1px 5px;border-radius:4px;cursor:pointer}
 dialog{border:0;border-radius:12px;padding:18px;width:min(560px,94vw)}dialog::backdrop{background:#0006}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.chk{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px}
+.tdt{width:100%;min-width:0;margin-top:4px}.tdt td,.tdt th{padding:4px 6px;border:0}.tdt input{padding:5px 7px}.tdt .tn{font-weight:600;white-space:nowrap}.hint{font-size:12px;color:var(--mut);margin:4px 0 0}.ex{display:block;font-size:12px;white-space:nowrap}.ex.old{color:var(--bad)}
 .chk label{display:flex;gap:6px;align-items:center;color:var(--tx);font-size:13px;margin:0}.chk input{width:auto}
 #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1b2333;color:#fff;padding:8px 14px;border-radius:8px;display:none}
 @media(max-width:560px){.grid{grid-template-columns:1fr}}
@@ -51,10 +52,11 @@ dialog{border:0;border-radius:12px;padding:18px;width:min(560px,94vw)}dialog::ba
 
 <dialog id="dlg"><h3 style="margin:0 0 6px" id="dt"></h3>
   <div class="grid"><div><label>Name</label><input id="n"></div><div><label>Ref / phone</label><input id="r"></div>
-  <div><label>Valid days after first use</label><input id="d" type="number" min="1" placeholder="90"></div>
-  <div><label>Fixed expiry date (optional)</label><input id="e" type="date"></div></div>
+  <div><label>Valid days after first use (default)</label><input id="d" type="number" min="1" placeholder="90"></div>
+  <div><label>Fixed expiry date (default, optional)</label><input id="e" type="date"></div></div>
   <label>Access — one key opens everything ticked</label><div class="chk" id="chk"></div>
   <label>Other types (comma separated)</label><input id="oth" placeholder="e.g. TRIAL, SSSB">
+  <label>Days of access for each type</label><div id="tdays"></div>
   <label>Note</label><textarea id="nt" rows="2"></textarea>
   <label class="chk" style="display:flex;margin-top:10px"><input type="checkbox" id="bl"> Blocked (access stops within about a minute)</label>
   <p style="text-align:right;margin:14px 0 0"><button class="g" id="cx">Cancel</button> <button id="sv">Save</button></p>
@@ -73,7 +75,7 @@ async function api(op,data){
   const j=await r.json(); if(!j.ok) throw new Error(j.error||"Failed"); return j;
 }
 function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",2200)}
-const stOf=u=>u.status==="BLOCKED"?"BLOCKED":(u.expiry&&u.expiry<Date.now()?"EXPIRED":(u.device?"ACTIVE":"NEW"));
+const stOf=u=>{const x=u.master||u.expiry;return u.status==="BLOCKED"?"BLOCKED":(x&&x<Date.now()?"EXPIRED":(u.device?"ACTIVE":"NEW"))};
 const fd=ms=>ms?new Date(ms).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}):"—";
 const iso=ms=>ms?new Date(ms).toISOString().slice(0,10):"";
 
@@ -102,14 +104,37 @@ function render(){
     <td><code data-copy="${esc(u.key)}" title="Click to copy">${esc(u.key)}</code></td>
     <td class="acc">${a.map(x=>`<span>${esc(x)}</span>`).join("")}</td>
     <td><span class="chip ${s}">${s}</span>${u.device?"<br><small>bound to a PC</small>":""}</td>
-    <td>${fd(u.expiry)}</td><td>${fd(u.last)}</td>
+    <td>${expCell(u,a)}</td><td>${fd(u.last)}</td>
     <td style="white-space:nowrap"><button class="s g" data-a="edit" data-k="${esc(u.key)}">Edit</button>
     <button class="s g" data-a="ext" data-k="${esc(u.key)}">+30d</button>
     <button class="s g" data-a="blk" data-k="${esc(u.key)}">${u.status==="BLOCKED"?"Unblock":"Block"}</button>
     <button class="s g" data-a="rst" data-k="${esc(u.key)}">Reset PC</button>
     <button class="s r" data-a="del" data-k="${esc(u.key)}">Delete</button></td></tr>`}).join("")||`<tr><td colspan="7" style="color:var(--mut)">No users yet — click “+ New key”.</td></tr>`;
 }
-const toU=u=>({key:u.key,name:u.name,ref:u.ref,access:u.access,days:u.days,expiry:iso(u.expiry),note:u.note,blocked:u.status==="BLOCKED"});
+function expCell(u,a){
+  if(a.includes("ALL")||!a.length||!u.eff)return fd(u.expiry);
+  return a.map(t=>{const e=u.eff[t];return `<span class="ex ${e&&e<Date.now()?"old":""}"><b>${esc(t)}</b> ${fd(e)}</span>`}).join("");
+}
+const toU=u=>{
+  const t={};Object.keys(u.types||{}).forEach(k=>{const x=u.types[k];t[k]=x.exp?{expiry:iso(x.exp)}:{days:x.days}});
+  return {key:u.key,name:u.name,ref:u.ref,access:u.access,days:u.days,expiry:iso(u.expiry),note:u.note,blocked:u.status==="BLOCKED",types:t};
+};
+/* ---- days of access per exam type (one key, a different validity for each type) ---- */
+let tv={};   // type -> {days, date, orig}
+const picked=()=>{
+  const a=[...document.querySelectorAll("#chk input:checked")].map(x=>x.value).concat($("#oth").value.toUpperCase().split(/[\s,;]+/).filter(Boolean));
+  return [...new Set(a)];
+};
+function renderTypes(){
+  const a=picked(), box=$("#tdays");
+  if(a.includes("ALL")){box.innerHTML='<p class="hint">"All tutors &amp; tests" uses one expiry for everything. Untick it and tick the exam types one by one to give each its own days.</p>';return}
+  if(!a.length){box.innerHTML="";return}
+  box.innerHTML='<table class="tdt"><thead><tr><th>Type</th><th>Days after first use</th><th>or fixed expiry date</th></tr></thead><tbody>'+
+    a.map(t=>{const v=tv[t]||{};return `<tr><td class="tn">${esc(t)}</td><td><input type="number" min="1" data-t="${esc(t)}" data-f="days" value="${esc(v.days||"")}" placeholder="default"></td><td><input type="date" data-t="${esc(t)}" data-f="date" value="${esc(v.date||"")}"></td></tr>`}).join("")+
+    '</tbody></table><p class="hint">Empty = this type uses the default days / date above. Days start at the key\'s first use; on a key already in use they start today. A date you leave unchanged is kept.</p>';
+}
+$("#tdays").oninput=e=>{const i=e.target.closest("[data-t]");if(!i)return;(tv[i.dataset.t]=tv[i.dataset.t]||{})[i.dataset.f]=i.value};
+$("#chk").onchange=renderTypes;$("#oth").oninput=renderTypes;
 async function act(fn,msg){try{await fn();toast(msg);await load()}catch(e){toast(e.message)}}
 
 function openEdit(u){
@@ -118,12 +143,19 @@ function openEdit(u){
   $("#chk").innerHTML=list.map(x=>`<label><input type="checkbox" value="${esc(x.c)}" ${have.includes(x.c)?"checked":""}> ${esc(x.n)}</label>`).join("");
   $("#n").value=u?.name||"";$("#r").value=u?.ref||"";$("#d").value=u?.days||"";$("#e").value=u?iso(u.expiry):"";
   $("#nt").value=u?.note||"";$("#bl").checked=u?.status==="BLOCKED";$("#oth").value=have.filter(x=>!known.includes(x)).join(", ");
+  tv={};
+  if(u&&u.types)Object.keys(u.types).forEach(k=>{const x=u.types[k];tv[k]=x.exp?{date:iso(x.exp),orig:iso(x.exp)}:{days:x.days,orig:""}});
+  renderTypes();
   $("#dlg").showModal();
 }
 $("#sv").onclick=()=>{
   let a=[...document.querySelectorAll("#chk input:checked")].map(x=>x.value).concat($("#oth").value.toUpperCase().split(/[\s,;]+/).filter(Boolean));
   if(a.includes("ALL"))a=["ALL"]; if(!a.length)return toast("Tick at least one access");
-  const u={key:cur?.key||"",name:$("#n").value.trim(),ref:$("#r").value.trim(),access:a.join(","),days:$("#d").value,expiry:$("#e").value,note:$("#nt").value,blocked:$("#bl").checked};
+  const types={};
+  if(!a.includes("ALL"))a.forEach(t=>{const v=tv[t];if(!v)return;
+    if(v.days&&(v.date||"")===(v.orig||""))types[t]={days:Number(v.days)};   // new days typed, date untouched -> days win
+    else if(v.date)types[t]={expiry:v.date};});
+  const u={key:cur?.key||"",name:$("#n").value.trim(),ref:$("#r").value.trim(),access:a.join(","),days:$("#d").value,expiry:$("#e").value,note:$("#nt").value,blocked:$("#bl").checked,types};
   $("#dlg").close(); act(async()=>{const j=await api("save",{user:u}); if(!cur){try{await navigator.clipboard.writeText(j.key)}catch(e){} toast("Created "+j.key+" (copied)")}},"Saved");
 };
 $("#cx").onclick=()=>$("#dlg").close();
@@ -132,7 +164,11 @@ $("#rows").onclick=e=>{
   const c=e.target.closest("[data-copy]"); if(c){navigator.clipboard.writeText(c.dataset.copy).then(()=>toast("Key copied"));return}
   const b=e.target.closest("[data-a]"); if(!b)return; const u=users.find(x=>x.key===b.dataset.k), k=u.key;
   if(b.dataset.a==="edit")openEdit(u);
-  if(b.dataset.a==="ext")act(()=>api("save",{user:{...toU(u),expiry:iso(Math.max(u.expiry||0,Date.now())+30*864e5)}}),"Extended by 30 days");
+  if(b.dataset.a==="ext")act(()=>{
+    const x=toU(u),ext=m=>iso(Math.max(m||0,Date.now())+30*864e5);
+    if(!String(u.access).split(",").includes("ALL")&&u.eff)Object.keys(u.eff).forEach(t=>{x.types[t]={expiry:ext(u.eff[t])}});
+    return api("save",{user:{...x,expiry:ext(u.expiry)}});
+  },"Extended by 30 days (every type)");
   if(b.dataset.a==="blk")act(()=>api("save",{user:{...toU(u),blocked:u.status!=="BLOCKED"}}),u.status==="BLOCKED"?"Unblocked":"Blocked");
   if(b.dataset.a==="rst"&&confirm("Let this key be activated on a new computer?"))act(()=>api("reset",{key:k}),"Computer binding cleared");
   if(b.dataset.a==="del"&&confirm("Delete "+k+" permanently?"))act(()=>api("delete",{key:k}),"Deleted");

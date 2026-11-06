@@ -416,7 +416,11 @@ function currentKey(){
 function unlockedList(){
   if(getActivationInfoOf_('ALL').active) return ['All Typing Tutors and all Tests'];
   const out = [];
-  storedTypes().forEach(t => { if(t !== 'ALL' && getActivationInfoOf_(t).active) out.push(NAMES[t] || ('Test: ' + t)); });
+  storedTypes().forEach(t => {
+    if(t === 'ALL') return;
+    const i = getActivationInfoOf_(t);
+    if(i.active) out.push((NAMES[t] || ('Test: ' + t)) + (i.expiresAt ? ' (until ' + formatActivationDate(i.expiresAt) + ')' : ''));   // each exam type has its own date
+  });
   return out;
 }
 const field = (l, v) => '<div class="license-field"><div class="lf-label">' + l + '</div><div class="lf-value">' + v + '</div></div>';

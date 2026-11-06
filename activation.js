@@ -71,7 +71,13 @@ async function activateProduct(code,type,opts){
         if(parts[2]){
             const list = parts[2].split(",").filter(Boolean);
             if(list.indexOf("ALL") >= 0) list.push("ENG","PBI","HIN");
-            list.forEach(t => markActivated(t, String(code).toUpperCase(), expiresAt));
+            /* PER-TYPE DAYS: the server may send "CHSL:<ms>,ENG:<ms>" = each exam type's own expiry. */
+            const perType = {};
+            (parts[3] || "").split(",").forEach(p => {
+                const m = /^([A-Z0-9_-]+):(\d+)$/.exec(p);
+                if(m) perType[m[1]] = Number(m[2]);
+            });
+            list.forEach(t => markActivated(t, String(code).toUpperCase(), perType[t] || expiresAt));
             if(list.indexOf("ALL") < 0) clearOne_("ALL");
         }
         return { ok:true, expiresAt: expiresAt };
@@ -185,7 +191,10 @@ function getActivationInfoOf_(type){
 function isActivationValid(type){
   const info = getActivationInfo(type);
   if(info.expired){
-    clearActivation(type);
+    /* Each exam type can have its own expiry, so only THIS type is cleared — the other
+       types opened by the same key keep working until their own date. */
+    clearOne_(type);
+    if(getActivationInfoOf_("ALL").expired) clearOne_("ALL");
     return false;
   }
   return info.active;
