@@ -18,7 +18,7 @@
   // 👉 Replace with your own Apps Script Web App URL if you deploy a new one.
   //    (See Code.gs / SETUP.md for how to create and deploy it.)
   const GOOGLE_SHEET_ENDPOINT =
-    "https://script.google.com/macros/s/AKfycbzAEuTahADRG44rCBeBwqJZL4N85MlHJYGFV6lm9bnFHKsU-KQYe9BizYTHuB_aepBCPQ/exec";
+    "https://script.google.com/macros/s/AKfycbxQ1Gvdw74_7EHTWE8wcNYzKxmmMwKmEHnduiO0qF5BtvLvXyeb3vUsQT24bJDV_kns/exec";
 
   function isConfigured() {
     return typeof GOOGLE_SHEET_ENDPOINT === "string" && GOOGLE_SHEET_ENDPOINT.indexOf("http") === 0;
