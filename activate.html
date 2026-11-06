@@ -495,7 +495,7 @@ async function activateKey(){
     }
   }
   if(r.ok){ location.reload(); return; }
-  alert(MSG[r.reason] || MSG.INVALID);
+  alert((MSG[r.reason] || MSG.INVALID) + (r.reason === 'INVALID' && r.raw ? '\n\n(Server replied: ' + r.raw + ')' : ''));
   renderKey();
 }
 

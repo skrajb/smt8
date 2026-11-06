@@ -11,7 +11,7 @@
    used) always happens server-side in GoogleAppsScript_Activation_Backend.gs.
    ============================================================ */
 
-const WEBAPP="https://script.google.com/macros/s/AKfycbxk6TUAyNUSQ9IAYh3Klkp0FFlM08oZomTPNyaYTy4sRCZlkuZaL9C1Is7M7-eRWJV0Sw/exec";
+const WEBAPP="https://script.google.com/macros/s/AKfycbxQ1Gvdw74_7EHTWE8wcNYzKxmmMwKmEHnduiO0qF5BtvLvXyeb3vUsQT24bJDV_kns/exec";
 
 /* localStorage key names for each product. */
 const ACTIVATION_META = {
@@ -103,7 +103,7 @@ async function activateProduct(code,type,opts){
     }
 
     say("Invalid activation code.");
-    return { ok:false, reason:"INVALID" };
+    return { ok:false, reason:"INVALID", raw: txt.slice(0,80) };
 }
 
 /* Same as activateProduct but never shows an alert — used for background re-checks. */

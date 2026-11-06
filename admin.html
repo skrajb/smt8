@@ -62,11 +62,11 @@ dialog{border:0;border-radius:12px;padding:18px;width:min(560px,94vw)}dialog::ba
 <div id="toast"></div>
 
 <script>
-const DEFAULT_URL="https://script.google.com/macros/s/AKfycbxk6TUAyNUSQ9IAYh3Klkp0FFlM08oZomTPNyaYTy4sRCZlkuZaL9C1Is7M7-eRWJV0Sw/exec";
+const DEFAULT_URL="https://script.google.com/macros/s/AKfycbxQ1Gvdw74_7EHTWE8wcNYzKxmmMwKmEHnduiO0qF5BtvLvXyeb3vUsQT24bJDV_kns/exec";
 const GH="https://raw.githubusercontent.com/skrajb/smt5/refs/heads/main/smt5.txt";
 const BASE=[{c:"ALL",n:"All tutors & tests"},{c:"ENG",n:"English Tutor"},{c:"PBI",n:"Punjabi Tutor"},{c:"HIN",n:"Hindi Tutor"}];
 const $=s=>document.querySelector(s), esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let URLX=localStorage.getItem("smt_url")||DEFAULT_URL, PW=sessionStorage.getItem("smt_pw")||"", users=[], tests=[], cur=null;
+let URLX=localStorage.getItem("smt_url2")||DEFAULT_URL, PW=sessionStorage.getItem("smt_pw")||"", users=[], tests=[], cur=null;
 
 async function api(op,data){
   const r=await fetch(URLX,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({admin:PW,op,...data})});
@@ -137,7 +137,7 @@ $("#rows").onclick=e=>{
   if(b.dataset.a==="rst"&&confirm("Let this key be activated on a new computer?"))act(()=>api("reset",{key:k}),"Computer binding cleared");
   if(b.dataset.a==="del"&&confirm("Delete "+k+" permanently?"))act(()=>api("delete",{key:k}),"Deleted");
 };
-$("#go").onclick=()=>{URLX=$("#url").value.trim();PW=$("#pw").value;localStorage.setItem("smt_url",URLX);sessionStorage.setItem("smt_pw",PW);$("#err").textContent="";load()};
+$("#go").onclick=()=>{URLX=$("#url").value.trim();PW=$("#pw").value;localStorage.setItem("smt_url2",URLX);sessionStorage.setItem("smt_pw",PW);$("#err").textContent="";load()};
 $("#pw").onkeydown=e=>{if(e.key==="Enter")$("#go").click()};
 $("#out").onclick=()=>{sessionStorage.removeItem("smt_pw");PW="";location.reload()};
 $("#url").value=URLX; loadTests(); if(PW)load();
