@@ -306,7 +306,7 @@
 
 <div class="activate-hero">
   <h1>🔑 Software Activation</h1>
-  <p>Activate each Smartech Typing Tutor course with the code your institute provided. Activations are valid for 90 days (about 3 months). Once a code expires it stops working — you'll need a new code from your institute to keep going.</p>
+  <p>Enter the single access key your institute gave you. One key unlocks the Typing Tutors and every test included in your plan. When the key expires, ask your institute to extend it or issue a new one.</p>
 
   <div class="device-chip">
     <span class="lbl">This device's ID:</span>
@@ -320,54 +320,26 @@
   <div class="info-banner">
     <span class="ico">ℹ️</span>
     <div>
-      <strong>Switching to a new computer?</strong> You don't need to contact us to deactivate — just open this page on your <em>old</em> device and click <strong>Deactivate</strong> next to the course. That instantly frees the code so it can be activated here. If you no longer have access to the old device, share its Device ID (shown above, on that device) with us and we'll release it for you.
+      <strong>Switching to a new computer?</strong> You don't need to contact us to deactivate — just open this page on your <em>old</em> device and click <strong>Deactivate</strong>. That instantly frees the code so it can be activated here. If you no longer have access to the old device, share its Device ID (shown above, on that device) with us and we'll release it for you.
     </div>
   </div>
 
-  <div class="product-card" id="englishCard">
+  <div class="product-card" id="keyCard">
     <div class="product-card-top">
       <div class="product-info">
-        <div class="product-icon">🔤</div>
+        <div class="product-icon">🔑</div>
         <div>
-          <div class="product-title">English Typing Tutor</div>
-          <div id="englishStatus" class="status-pill inactive">Not Activated</div>
+          <div class="product-title">Access Key</div>
+          <div id="keyStatus" class="status-pill inactive">Not Activated</div>
         </div>
       </div>
-      <div class="product-actions" id="englishActions"></div>
+      <div class="product-actions" id="keyActions"></div>
     </div>
-    <div class="license-details hidden" id="englishDetails"></div>
-  </div>
-
-  <div class="product-card" id="punjabiCard">
-    <div class="product-card-top">
-      <div class="product-info">
-        <div class="product-icon">🔤</div>
-        <div>
-          <div class="product-title">Punjabi Typing Tutor</div>
-          <div id="punjabiStatus" class="status-pill inactive">Not Activated</div>
-        </div>
-      </div>
-      <div class="product-actions" id="punjabiActions"></div>
-    </div>
-    <div class="license-details hidden" id="punjabiDetails"></div>
-  </div>
-
-  <div class="product-card" id="hindiCard">
-    <div class="product-card-top">
-      <div class="product-info">
-        <div class="product-icon">🔤</div>
-        <div>
-          <div class="product-title">Hindi Typing Tutor</div>
-          <div id="hindiStatus" class="status-pill inactive">Not Activated</div>
-        </div>
-      </div>
-      <div class="product-actions" id="hindiActions"></div>
-    </div>
-    <div class="license-details hidden" id="hindiDetails"></div>
+    <div class="license-details hidden" id="keyDetails"></div>
   </div>
 
   <div class="notice-box">
-    ⚠️ Before accessing the English, Punjabi or Hindi Typing Tutor you have to activate it using an activation code. Codes automatically stop working 90 days after activation — you'll need a fresh code from your institute to reactivate.
+    ⚠️ Enter your access key once to use the Typing Tutors and Tests. The key stops working on its expiry date — ask your institute to extend it or get a new one.
   </div>
 
 </div>
@@ -376,11 +348,8 @@
 
 <script>
 
-const PRODUCTS = [
-  { type:'ENG', prefix:'english', name:'English Typing Tutor' },
-  { type:'PBI', prefix:'punjabi', name:'Punjabi Typing Tutor' },
-  { type:'HIN', prefix:'hindi',  name:'Hindi Typing Tutor' }
-];
+const NAMES = { ENG:'English Typing Tutor', PBI:'Punjabi Typing Tutor', HIN:'Hindi Typing Tutor' };
+const byId = id => document.getElementById(id);
 
 document.getElementById('deviceIdText').textContent = getDeviceId();
 
@@ -426,83 +395,64 @@ function flashCopied(btn){
   }, 1500);
 }
 
-/* ---------- render each product card from its activation info ---------- */
-function renderCard(p){
-  const info = getActivationInfo(p.type); // just reports; doesn't clear anything
-  const statusEl = document.getElementById(p.prefix + 'Status');
-  const cardEl = document.getElementById(p.prefix + 'Card');
-  const actionsEl = document.getElementById(p.prefix + 'Actions');
-  const detailsEl = document.getElementById(p.prefix + 'Details');
+/* ---------- the single access key: what is stored on this computer ---------- */
+function storedTypes(){
+  const t = ['ALL','ENG','PBI','HIN'];
+  for(let i=0;i<localStorage.length;i++){
+    const m = /^lic_(.+)_code$/.exec(localStorage.key(i) || '');
+    if(m && t.indexOf(m[1]) < 0) t.push(m[1]);
+  }
+  return t;
+}
+function currentKey(){
+  let expired = null;
+  for(const t of storedTypes()){
+    const i = getActivationInfoOf_(t);
+    if(i.active) return Object.assign({type:t}, i);
+    if(i.expired && !expired) expired = Object.assign({type:t}, i);
+  }
+  return expired;
+}
+function unlockedList(){
+  if(getActivationInfoOf_('ALL').active) return ['All Typing Tutors and all Tests'];
+  const out = [];
+  storedTypes().forEach(t => { if(t !== 'ALL' && getActivationInfoOf_(t).active) out.push(NAMES[t] || ('Test: ' + t)); });
+  return out;
+}
+const field = (l, v) => '<div class="license-field"><div class="lf-label">' + l + '</div><div class="lf-value">' + v + '</div></div>';
+const entryForm = ph => '<input id="keyCode" placeholder="' + ph + '" autocomplete="off" onkeydown="if(event.key===\'Enter\')activateKey()">' +
+                        '<button id="keyActivateBtn" onclick="activateKey()">Activate</button>';
 
-  cardEl.classList.remove('is-active','is-expired');
+function renderKey(){
+  const info = currentKey(), card = byId('keyCard'), st = byId('keyStatus'), act = byId('keyActions'), det = byId('keyDetails');
+  card.classList.remove('is-active','is-expired');
 
-  if(info.active){
-    cardEl.classList.add('is-active');
-    statusEl.textContent = 'Activated';
-    statusEl.className = 'status-pill active';
-
-    actionsEl.innerHTML =
-      '<button class="deactivate-btn" id="' + p.prefix + 'DeactivateBtn" onclick="deactivateLicense(\'' + p.type + '\')">Deactivate</button>';
-
+  if(info && info.active){
+    card.classList.add('is-active');
+    st.textContent = 'Activated'; st.className = 'status-pill active';
+    act.innerHTML = '<button class="deactivate-btn" id="keyDeactivateBtn" onclick="deactivateKey()">Deactivate</button>';
     const pct = info.daysLeft != null ? Math.max(0, Math.min(100, (info.daysLeft / 90) * 100)) : 100;
-    const barClass = info.daysLeft <= 7 ? 'danger' : (info.daysLeft <= 21 ? 'warn' : '');
-
-    detailsEl.classList.remove('hidden');
-    detailsEl.innerHTML =
-      '<div class="license-field">' +
-        '<div class="lf-label">Activation Code</div>' +
-        '<div class="lf-value"><code class="lf-code">' + escapeHtml(info.code || '—') + '</code>' +
-          '<button class="lf-copy" onclick="copyText(\'' + escapeAttr(info.code || '') + '\', this)">Copy</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="license-field">' +
-        '<div class="lf-label">Device ID</div>' +
-        '<div class="lf-value"><code class="lf-code">' + getDeviceId() + '</code></div>' +
-      '</div>' +
-      '<div class="license-field">' +
-        '<div class="lf-label">Expires On &middot; ' + info.daysLeft + (info.daysLeft === 1 ? ' day left' : ' days left') + '</div>' +
-        '<div class="lf-value">' + formatActivationDate(info.expiresAt) + '</div>' +
-        '<div class="expiry-bar-track"><div class="expiry-bar-fill ' + barClass + '" style="width:' + pct + '%"></div></div>' +
-      '</div>';
-
-  } else if(info.expired){
-    cardEl.classList.add('is-expired');
-    statusEl.textContent = 'Expired';
-    statusEl.className = 'status-pill expired';
-
-    actionsEl.innerHTML =
-      '<input id="' + p.prefix + 'Code" placeholder="Enter New Activation Code">' +
-      '<button id="' + p.prefix + 'ActivateBtn" onclick="activate(\'' + p.type + '\',\'' + p.prefix + '\')">Activate</button>';
-
-    detailsEl.classList.remove('hidden');
-    detailsEl.innerHTML =
-      '<div class="license-field">' +
-        '<div class="lf-label">Expired Code</div>' +
-        '<div class="lf-value"><code class="lf-code">' + escapeHtml(info.code || '—') + '</code></div>' +
-      '</div>' +
-      '<div class="license-field">' +
-        '<div class="lf-label">Device ID</div>' +
-        '<div class="lf-value"><code class="lf-code">' + getDeviceId() + '</code></div>' +
-      '</div>' +
-      '<div class="license-field">' +
-        '<div class="lf-label">Expired On</div>' +
-        '<div class="lf-value">' + formatActivationDate(info.expiresAt) + '</div>' +
-      '</div>';
-
-    // The window is up on this device's local mirror. Stop granting
-    // access here, but leave the code itself alone server-side —
-    // it stays dead until the sheet's Expiry Date is pushed forward
-    // or a new code is issued.
-    isActivationValid(p.type);
-
+    const bar = info.daysLeft <= 7 ? 'danger' : (info.daysLeft <= 21 ? 'warn' : '');
+    det.classList.remove('hidden');
+    det.innerHTML =
+      field('Access Key', '<code class="lf-code">' + escapeHtml(info.code || '—') + '</code><button class="lf-copy" onclick="copyText(\'' + escapeAttr(info.code || '') + '\', this)">Copy</button>') +
+      field('Unlocked on this computer', escapeHtml(unlockedList().join(' · ') || '—')) +
+      field('Device ID', '<code class="lf-code">' + getDeviceId() + '</code>') +
+      field('Expires On &middot; ' + info.daysLeft + (info.daysLeft === 1 ? ' day left' : ' days left'),
+            formatActivationDate(info.expiresAt) + '</div><div class="expiry-bar-track"><div class="expiry-bar-fill ' + bar + '" style="width:' + pct + '%"></div></div><div>');
+  } else if(info && info.expired){
+    card.classList.add('is-expired');
+    st.textContent = 'Expired'; st.className = 'status-pill expired';
+    act.innerHTML = entryForm('Enter Access Key');
+    det.classList.remove('hidden');
+    det.innerHTML = field('Expired Key', '<code class="lf-code">' + escapeHtml(info.code || '—') + '</code>') +
+                    field('Expired On', formatActivationDate(info.expiresAt)) +
+                    field('Device ID', '<code class="lf-code">' + getDeviceId() + '</code>');
+    isActivationValid(info.type);   // stop granting access here; the sheet decides if it can be extended
   } else {
-    statusEl.textContent = 'Not Activated';
-    statusEl.className = 'status-pill inactive';
-    actionsEl.innerHTML =
-      '<input id="' + p.prefix + 'Code" placeholder="Enter Activation Code">' +
-      '<button id="' + p.prefix + 'ActivateBtn" onclick="activate(\'' + p.type + '\',\'' + p.prefix + '\')">Activate</button>';
-    detailsEl.classList.add('hidden');
-    detailsEl.innerHTML = '';
+    st.textContent = 'Not Activated'; st.className = 'status-pill inactive';
+    act.innerHTML = entryForm('Enter Access Key');
+    det.classList.add('hidden'); det.innerHTML = '';
   }
 }
 
@@ -513,80 +463,60 @@ function escapeAttr(s){
   return String(s).replace(/'/g, "\\'");
 }
 
-function checkStatus(){
-  PRODUCTS.forEach(renderCard);
-}
+function checkStatus(){ renderKey(); }
 checkStatus();
 
-/* ---------- busy state while an activate/deactivate call is in flight ---------- */
-function setBusy(prefix, action, busy){
-  const inputEl = document.getElementById(prefix + 'Code');
-  const btn = document.getElementById(prefix + (action === 'activate' ? 'ActivateBtn' : 'DeactivateBtn'));
-  const statusEl = document.getElementById(prefix + 'Status');
+function setBusy(label){
+  const btn = byId('keyActivateBtn') || byId('keyDeactivateBtn'), inp = byId('keyCode'), st = byId('keyStatus');
+  if(btn){ btn.innerHTML = '<span class="spinner"></span>' + label; btn.disabled = true; }
+  if(inp) inp.disabled = true;
+  st.textContent = label; st.className = 'status-pill pending';
+}
+const MSG = {
+  EXPIRED:  "This access key has expired. Please ask your institute to extend it or issue a new key.",
+  USED:     "This key is already activated on another computer. Deactivate it there first, or ask your institute to reset it.",
+  BLOCKED:  "This access key has been blocked. Please contact your institute.",
+  BUSY:     "The activation server is busy. Please try again in a moment.",
+  NETWORK:  "Could not reach the activation server. Please check your internet connection and try again.",
+  INVALID:  "Invalid access key."
+};
 
-  if(busy){
-    if(btn){
-      btn.dataset.label = btn.innerHTML;
-      btn.innerHTML = '<span class="spinner"></span>' + (action === 'activate' ? 'Activating…' : 'Deactivating…');
-      btn.disabled = true;
-    }
-    if(inputEl) inputEl.disabled = true;
-    if(statusEl){
-      statusEl.textContent = action === 'activate' ? 'Activating…' : 'Deactivating…';
-      statusEl.className = 'status-pill pending';
+/* ONE key: the server says what it unlocks (all tutors, tests...) and activation.js marks all of it. */
+async function activateKey(){
+  const code = byId('keyCode').value.trim();
+  if(!code){ alert('Please enter your access key.'); return; }
+  setBusy('Activating…');
+  let r = await activateProduct(code, '', { silent:true });
+  if(!r.ok && r.reason === 'INVALID'){            // an old single-course code still works
+    for(const t of ['ENG','PBI','HIN']){
+      const x = await activateProduct(code, t, { silent:true });
+      if(x.ok){ markActivated(t, code.toUpperCase(), x.expiresAt); r = x; break; }
+      if(x.reason !== 'INVALID'){ r = x; break; }
     }
   }
+  if(r.ok){ location.reload(); return; }
+  alert(MSG[r.reason] || MSG.INVALID);
+  renderKey();
 }
 
-/* ---------- activate (works for a first-time code, or a fresh
-   replacement code after the previous one expired) ---------- */
-async function activate(type, prefix){
-  setBusy(prefix, 'activate', true);
-  const code = document.getElementById(prefix + 'Code').value.trim();
-  const result = await activateProduct(code, type);
-  if(result.ok){
-    markActivated(type, code, result.expiresAt);
+async function deactivateKey(){
+  const info = currentKey();
+  if(!info || !info.code){ alert('No activation found.'); return; }
+  setBusy('Deactivating…');
+  let txt;
+  try{
+    const res = await fetch(WEBAPP + '?action=deactivate&type=' + encodeURIComponent(info.type) +
+      '&code=' + encodeURIComponent(info.code) + '&device=' + encodeURIComponent(rawDeviceString()));
+    txt = (await res.text()).trim();
+  }catch(e){ alert(MSG.NETWORK); renderKey(); return; }
+  if(txt === 'OK' || txt === 'INVALID'){
+    clearActivation(info.type);
+    alert('Deactivated. You can now activate this key on another computer.');
     location.reload();
   }else{
-    checkStatus();
+    renderKey();
+    alert(txt === 'DEVICE_MISMATCH' ? 'This key is bound to a different computer.' : (MSG[txt] || txt));
   }
-}
-
-const PREFIX_BY_TYPE = { ENG:'english', PBI:'punjabi', HIN:'hindi' };
-
-async function deactivateLicense(type){
-
-    const prefix = PREFIX_BY_TYPE[type];
-    const info = getActivationInfo(type);
-    const code = info.code;
-
-    if(!code){
-        alert("No activation found.");
-        return;
-    }
-
-    setBusy(prefix, 'deactivate', true);
-
-    const device = rawDeviceString();
-
-    const url =
-        WEBAPP +
-        "?action=deactivate"
-        +"&type="+type
-        +"&code="+encodeURIComponent(code)
-        +"&device="+encodeURIComponent(device);
-
-    const res = await fetch(url);
-    const txt = await res.text();
-
-    if(txt=="OK"){
-      clearActivation(type);
-      alert("License deactivated successfully. You can now activate this code on another device.");
-      location.reload();
-    }else{
-      checkStatus();
-      alert(txt);
-    }
 }
 </script>
 </body>

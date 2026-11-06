@@ -188,23 +188,6 @@ document.addEventListener('contextmenu', function(e) {
 
 
 <script>
-	if(!isActivationValid("ENG")){
-
-const code = prompt("Enter English Tutor Activation Code");
-
-activateProduct(code,"ENG").then(result=>{
-
-if(result.ok){
-
-markActivated("ENG", code, result.expiresAt);
-
-location.reload();
-
-}
-
-});
-
-}
 // Disable right click
 document.addEventListener('contextmenu', function(e) {
     e.preventDefault();
