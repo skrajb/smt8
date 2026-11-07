@@ -91,8 +91,10 @@
       <li>Press <b>Activate</b>. An internet connection is needed for this step only.</li>
       <li>The card turns green and shows the expiry date and days remaining.</li>
     </ol>
-    <figure class="shot"><img src="03-activation.jpg" alt="Activation page with course cards and the device ID"><figcaption>The Activation page shows your Device ID and the status of each course. Activated courses show their code, expiry date and days left.</figcaption></figure>
+    <p>One access code can unlock <b>several courses and tests at once</b>. Your institute can give each of them its <b>own number of days</b>, for example 30 days for one test and 90 days for English. The Activation page lists every unlocked course and test with its own end date, so check the date for the one you are using.</p>
+    <figure class="shot"><img src="03-activation.jpg" alt="Activation page with course cards and the device ID"><figcaption>The Activation page shows your Device ID and the status of each course. Activated courses show their code, expiry date and days left. Each course or test can have its own end date.</figcaption></figure>
     <div class="tip"><b>Moving to a new computer?</b> Click <b>Deactivate</b> on the old computer first, then activate on the new one. If the old computer is not available, send your institute the Device ID shown on this page.</div>
+    <div class="tip"><b>When one course or test runs out</b>, the others from the same code keep working until their own end date. Ask your institute to extend only the one that expired. You do not need to enter the code again for the others.</div>
     <div class="tip"><b>Test Centre tests</b> can have their own access codes. You enter those on the test's own page (see <a href="#testcentre">Test Centre</a>), not here.</div>
   </section>
 
@@ -140,7 +142,7 @@
     <h2><span class="num">9</span>Test Centre (exam-style tests)</h2>
     <p>Open <b>Test Centre</b> to take an exam-style test such as SSC CHSL or SSC CGL. Each card shows the test's <b>time</b>, its <b>pass rule</b> (minimum speed and accuracy) and its status:</p>
     <ul>
-      <li><span style="color:#1a7f4b;font-weight:700">Days left</span>: you already have access. Click <b>Open exercises</b>.</li>
+      <li><span style="color:#1a7f4b;font-weight:700">Days left</span>: you already have access. Click <b>Open exercises</b>. The days left are counted for that test alone, so two tests can show different numbers.</li>
       <li><span style="color:#b26a00;font-weight:700">Code needed</span>: open the card and enter the access code your institute gave you for that test.</li>
       <li><b>Free</b>: no code is needed.</li>
     </ul>
@@ -148,7 +150,7 @@
     <p style="margin-top:14px">Some tests include <b>more than one language</b> (for example English and Punjabi). Their card shows a badge for each language, and the exercise page lists English and Punjabi as <b>separate blocks</b>, each with its own time, pass rule and exercise numbers. Pick the exercise from the language you want to type.</p>
     <p style="margin-top:14px">After opening a test, choose the exercise you want. The test fixes the time and decides <b>Pass or Fail</b> by its own rule: you need the required speed <i>and</i> accuracy. The rule is repeated under your result. Results record the test name, and a Pass creates a certificate for that test.</p>
     <p style="margin-top:14px"><b>PHHC (Punjab &amp; Haryana High Court)</b> is judged on the <b>words you type</b>, not on 5 keystrokes per word. Your <b>net words</b> are the words typed minus your mistakes (wrong, extra, skipped or joined / split words), and your <b>result speed</b> is net words divided by the 10 minutes. You pass with <b>300 net words in 10 minutes</b> (30 words per minute).</p>
-    <div class="tip"><b>Institute staff:</b> test types, exercises and access codes come from your institute's exercise file and licence sheet. For a test with two languages, write <code>language: English, Punjabi</code> in its <code>### TEST</code> block and tag each exercise with its language (optional own rule per language, e.g. <code>punjabi-wpm: 30</code>); see <code>test_types_format.txt</code>. Use <b>Manage</b> on the Dashboard to see every test and exercise and to print them on A4 sheets with the Smartech Education header.</div>
+    <div class="tip"><b>Institute staff:</b> test types, exercises and access codes come from your institute's exercise file and licence sheet. For a test with two languages, write <code>language: English, Punjabi</code> in its <code>### TEST</code> block and tag each exercise with its language (optional own rule per language, e.g. <code>punjabi-wpm: 30</code>); see <code>test_types_format.txt</code>. Use the <b>admin page</b> to set the days of access for each test type separately on one key (tick the types, then fill in days or a date for each; empty uses the key's default days). Use <b>Manage</b> on the Dashboard to see every test and exercise and to print them on A4 sheets with the Smartech Education header.</div>
   </section>
 
   <section class="step" id="paragraph">
@@ -188,7 +190,7 @@
     <h2><span class="num">12</span>Track your progress and certificates</h2>
     <p>Open <b>My Progress</b> to see the tests you have taken in the last 3 days (older results are removed automatically): which exercise it was, speed, accuracy and result. Best speed and average accuracy are shown for each language. Earned certificates are listed on the same page, and you can export the history to a CSV file that opens in Excel.</p>
     <figure class="shot"><img src="08-progress.jpg" alt="My Progress page with stats, history and certificates"><figcaption>Your history stays on this computer and covers the last 3 days.</figcaption></figure>
-    <div class="tip"><b>Today's Leaderboard</b> needs an internet connection. Your own results are always saved on the computer.</div>
+    <div class="tip"><b>Today's Leaderboard</b> needs an internet connection. It lists the fastest students tested today across the centre, taken from the results sheet. Your own results are always saved on the computer, and they reach the leaderboard once the computer is online.</div>
   </section>
 
   <section class="step" id="themes">
@@ -218,13 +220,14 @@
       <tr><th>Problem</th><th>What to do</th></tr>
       <tr><td>"Invalid activation code"</td><td>Check the code for typing mistakes and make sure you used the code for the right course or test.</td></tr>
       <tr><td>"Already activated on another computer"</td><td>Deactivate it on the old computer, or contact your institute with your Device ID.</td></tr>
-      <tr><td>Course asks to activate again</td><td>The 90-day activation has ended. Ask your institute for a new code.</td></tr>
+      <tr><td>Course asks to activate again</td><td>The days for that course have ended. Each course or test has its own end date, shown on the Activation page. Ask your institute to extend it or to give you a new code.</td></tr>
+      <tr><td>One test stopped working but the others still open</td><td>That test's own days have ended. The others from the same code are not affected. Ask your institute to extend that test.</td></tr>
       <tr><td>A Test Centre test says "Code needed" or is locked</td><td>Open the test and enter its access code. If the code was blocked or has expired, ask your institute for a new one.</td></tr>
       <tr><td>Activation fails</td><td>Check the internet connection. Activation and the leaderboard are the only parts that need it.</td></tr>
       <tr><td>The Test Centre or exercise list is empty</td><td>Connect to the internet once so the exercises can download. After that they work offline.</td></tr>
       <tr><td>Punjabi or Hindi letters do not appear</td><td>Add the language and keyboard layout in Windows Settings &gt; Time &amp; Language, then switch to it with <kbd>Alt</kbd> + <kbd>Shift</kbd>.</td></tr>
       <tr><td>I cannot change Test Mode in the middle of a test</td><td>It is locked while a test runs. Press <b>Restart Test</b>, then change it.</td></tr>
-      <tr><td>Leaderboard is empty</td><td>It needs an internet connection. Your own results are always saved on the computer.</td></tr>
+      <tr><td>Leaderboard is empty or says "Unable to load leaderboard"</td><td>It needs an internet connection. Check the connection and reload the Dashboard. If it is online and still fails, tell your institute: the leaderboard service may need updating. Your own results are always saved on the computer. A new day starts with an empty leaderboard until the first test is finished.</td></tr>
     </table>
     <p style="margin-top:14px">Still stuck? Open <a href="contact.html">Contact</a> and email us with your Device ID and a short description.</p>
   </section>
