@@ -79,6 +79,13 @@ async function activateProduct(code,type,opts){
             });
             list.forEach(t => markActivated(t, String(code).toUpperCase(), perType[t] || expiresAt));
             if(list.indexOf("ALL") < 0) clearOne_("ALL");
+            /* The admin may have REMOVED some access from this key: clear every other
+               type on this computer that was unlocked by the same key. */
+            storedTypes_().forEach(t => {
+              if(list.indexOf(t) >= 0) return;
+              const m = getActivationMeta(t);
+              if(m && localStorage.getItem(m.code) === String(code).toUpperCase()) clearOne_(t);
+            });
         }
         return { ok:true, expiresAt: expiresAt };
     }
@@ -205,3 +212,70 @@ function formatActivationDate(ms){
   const d = new Date(ms);
   return d.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
 }
+
+
+/* ---------- keep this computer in step with the Licenses sheet ---------- */
+
+function storedTypes_(){
+  const t = ["ALL","ENG","PBI","HIN"];
+  for(let i=0;i<localStorage.length;i++){
+    const mm = /^lic_(.+)_code$/.exec(localStorage.key(i) || "");
+    if(mm && t.indexOf(mm[1]) < 0) t.push(mm[1]);
+  }
+  return t;
+}
+
+/* The access key currently stored on this computer (any type), or "". */
+function storedKeyCode_(){
+  const types = storedTypes_();
+  for(let i=0;i<types.length;i++){
+    const m = getActivationMeta(types[i]);
+    const c = m ? localStorage.getItem(m.code) : "";
+    if(c) return c;
+  }
+  return "";
+}
+
+/* Asks the sheet what this key opens RIGHT NOW (blocked, expired, deleted, access
+   list changed, expiry changed) and updates this computer to match. At most once a
+   minute unless force=true. Offline / busy / device mismatch never lock anyone out.
+   Resolves true when local state changed. */
+const ACCESS_SYNC_EVERY_MS = 60 * 1000;
+async function syncAccessKey(force){
+  const code = storedKeyCode_();
+  if(!code) return false;
+  try{
+    const last = Number(localStorage.getItem("smartechAccessSync")) || 0;
+    if(!force && Date.now() - last < ACCESS_SYNC_EVERY_MS) return false;
+  }catch(e){}
+  const before = JSON.stringify(storedTypes_().map(t => [t, getActivationInfoOf_(t).active, getActivationInfoOf_(t).expiresAt]));
+  const timeout = new Promise(res => setTimeout(() => res({ ok:false, reason:"NETWORK" }), 5000));
+  const r = await Promise.race([activateProduct(code, "", { silent:true }), timeout]);
+  if(r.reason === "NETWORK" || r.reason === "BUSY" || r.reason === "USED") return false;
+  try{ localStorage.setItem("smartechAccessSync", String(Date.now())); }catch(e){}
+  if(!r.ok){
+    if(r.reason === "BLOCKED" || r.reason === "EXPIRED"){
+      clearActivation(storedTypes_().find(t => getActivationMeta(t) && localStorage.getItem(getActivationMeta(t).code) === code) || "ENG");
+    }else if(r.reason === "INVALID"){
+      /* an old single-course code: ask again with its own type before giving up */
+      let alive = false;
+      for(const t of storedTypes_()){
+        const m = getActivationMeta(t);
+        if(!m || localStorage.getItem(m.code) !== code) continue;
+        const x = await activateProduct(code, t, { silent:true });
+        if(x.ok){ markActivated(t, code, x.expiresAt); alive = true; }
+        else if(x.reason === "NETWORK" || x.reason === "BUSY" || x.reason === "USED"){ return false; }
+      }
+      if(!alive) clearActivation(storedTypes_().find(t => getActivationMeta(t) && localStorage.getItem(getActivationMeta(t).code) === code) || "ENG");
+    }
+  }
+  const after = JSON.stringify(storedTypes_().map(t => [t, getActivationInfoOf_(t).active, getActivationInfoOf_(t).expiresAt]));
+  return before !== after;
+}
+
+/* Runs on every page that loads this file; pages can listen for the change. */
+window.addEventListener("load", function(){
+  syncAccessKey(false).then(function(changed){
+    if(changed) window.dispatchEvent(new Event("smartech-access-changed"));
+  }).catch(function(){});
+});

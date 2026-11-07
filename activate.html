@@ -469,6 +469,9 @@ function escapeAttr(s){
 
 function checkStatus(){ renderKey(); }
 checkStatus();
+/* Always ask the sheet when this page opens, then redraw if the admin changed anything. */
+syncAccessKey(true).then(function(changed){ if(changed) renderKey(); }).catch(function(){});
+window.addEventListener('smartech-access-changed', renderKey);
 
 function setBusy(label){
   const btn = byId('keyActivateBtn') || byId('keyDeactivateBtn'), inp = byId('keyCode'), st = byId('keyStatus');
